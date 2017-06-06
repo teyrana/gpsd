@@ -220,6 +220,10 @@ static gps_mask_t processVTG(int count,
     session->newdata.speed = safe_atof(field[5]) * KNOTS_TO_MPS;
     mask |= SPEED_SET;
 
+    // request to report an output message
+    // mask |= CLEAR_IS;
+    mask |= REPORT_IS;
+
     gpsd_log(&session->context->errout, LOG_DATA,
              "VTG: course(T)=%.2f, course(M)=%.2f, speed=%.2f",
              session->newdata.track, session->newdata.magnetic_track,
