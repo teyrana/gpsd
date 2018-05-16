@@ -1135,7 +1135,7 @@ static void mtk3301_event_hook(struct gps_device_t *session, event_t event)
         /* PMTK_API_Q_OUTPUT_CTL - Query PPS pulse width - Trimble only?
          * http://trl.trimble.com/docushare/dsweb/Get/Document-482603/CONDOR_UG_2C_75263-00.pdf *
          * badly documented */
-	 (void)nmea_send(session, "$PMTK424");	
+	 (void)nmea_send(session, "$PMTK424");
     }
 }
 
@@ -1611,6 +1611,65 @@ const struct gps_type_t driver_aivdm = {
 /* *INDENT-ON* */
 #endif /* AIVDM_ENABLE */
 
+#ifdef ARPA_ENABLE
+static bool arpa_decode(const char *buf UNUSED, size_t buflen UNUSED,
+		  struct gps_device_t *session UNUSED,
+		  struct arpa_t *ais UNUSED,
+		  int debug UNUSED)
+{
+        return true;
+}
+
+static gps_mask_t arpa_analyze(struct gps_device_t *session)
+{
+    if (session->lexer.type == AIVDM_PACKET) {
+        if (arpa_decode((char *)session->lexer.outbuffer, session->lexer.outbuflen,
+                            session,
+                            &session->gpsdata.arpa,
+                            session->context->errout.debug)) {
+            return ONLINE_SET | ARPA_SET;
+        }
+    } else {
+        return ONLINE_SET;
+    }
+#ifdef NMEA0183_ENABLE
+    if (session->lexer.type == NMEA_PACKET) {
+	return nmea_parse((char *)session->lexer.outbuffer, session);
+    }
+#endif /* NMEA0183_ENABLE */
+    return 0;
+}
+
+/* *INDENT-OFF* */
+const struct gps_type_t driver_arpa = {
+    /* Full name of type */
+    .type_name        = "ARPA",    	/* associated lexer packet type */
+    .packet_type      = NMEA_PACKET,	/* numeric packet type */
+    .flags            = DRIVER_NOFLAGS,	/* no rollover or other flags */
+    .trigger          = "$GPTTM,",      /* identifying response */
+    .channels         = 0,		/* not used by this driver */
+    .probe_detect     = NULL,		/* no probe */
+    .get_packet       = generic_get,	/* how to get a packet */
+    .parse_packet     = arpa_analyze,   /* how to analyze a packet */
+    .rtcm_writer      = NULL,		/* don't send RTCM data,  */
+    .init_query       = NULL,		/* non-perturbing initial query */
+    .event_hook       = NULL,		/* lifetime event handler */
+#ifdef RECONFIGURE_ENABLE
+    .speed_switcher   = NULL,		/* no speed switcher */
+    .mode_switcher    = NULL,		/* no mode switcher */
+    .rate_switcher    = NULL,		/* no rate switcher */
+    .min_cycle        = 1,		/* max 1Hz */
+#endif /* RECONFIGURE_ENABLE */
+#ifdef CONTROLSEND_ENABLE
+    .control_send     = NULL,		/* no control sender */
+#endif /* CONTROLSEND_ENABLE */
+#ifdef TIMEHINT_ENABLE
+    .time_offset     = NULL,		/* no NTP communication */
+#endif /* TIMEHINT_ENABLE */
+};
+/* *INDENT-ON* */
+#endif /* ARPA_ENABLE */
+
 #ifdef PASSTHROUGH_ENABLE
 /**************************************************************************
  *
@@ -1810,6 +1869,9 @@ static const struct gps_type_t *gpsd_driver_array[] = {
 #ifdef AIVDM_ENABLE
     &driver_aivdm,
 #endif /* AIVDM_ENABLE */
+#ifdef ARPA_ENABLE
+    &driver_arpa,
+#endif /* ARPA_ENABLE */
 #endif /* NMEA0183_ENABLE */
 
 #ifdef EVERMORE_ENABLE

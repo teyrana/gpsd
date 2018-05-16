@@ -267,6 +267,32 @@ static int json_sky_read(const char *buf, struct gps_data_t *gpsdata,
     return 0;
 }
 
+static int json_arpa_read(const char *buf, struct gps_data_t *gpsdata,
+			 const char **endptr)
+{
+    const struct json_attr_t json_arpa_attrs[] = {
+	/* *INDENT-OFF* */
+	{"class",    t_check,     .dflt.check = "ARPA"},
+	{"device",   t_string,    .addr.string = gpsdata->dev.path,
+	                          .len = sizeof(gpsdata->dev.path)},
+	{"number",   t_integer,   .addr.real = &gpsdata->arpa.number},
+	{"range",    t_real,      .addr.character = &gpsdata->arpa.range, .dflt.real = NAN},
+	{"bearing",  t_real,      .addr.real = &gpsdata->arpa.bearing, .dflt.real = NAN},
+	{"relative", t_boolean,   .addr.character = &gpsdata->arpa.relative},
+	{"speed",    t_real,      .addr.real = &gpsdata->arpa.speed, .dflt.real = NAN},
+	{"course",   t_real,      .addr.real = &gpsdata->arpa.course, .dflt.real = NAN},
+	{"units",    t_character, .addr.character = &gpsdata->arpa.units},
+	{NULL},
+	/* *INDENT-ON* */
+	};
+
+    int status = json_read_object(buf, json_arpa_attrs, endptr);
+    if (status != 0)
+        return status;
+
+    return 0;
+}
+
 static int json_att_read(const char *buf, struct gps_data_t *gpsdata,
 			 const char **endptr)
 {
@@ -287,7 +313,6 @@ static int json_att_read(const char *buf, struct gps_data_t *gpsdata,
 	{"yaw",      t_real,      .addr.real = &gpsdata->attitude.yaw,
 			             .dflt.real = NAN},
 	{"yaw_st",   t_character, .addr.character = &gpsdata->attitude.yaw_st},
-
 	{"dip",      t_real,      .addr.real = &gpsdata->attitude.dip,
 			             .dflt.real = NAN},
 	{"mag_len",  t_real,      .addr.real = &gpsdata->attitude.mag_len,
@@ -653,6 +678,14 @@ int libgps_json_unpack(const char *buf,
 	}
 	return FILTER(status);
 #endif /* AIVDM_ENABLE */
+#ifdef ARPA_ENABLE
+    } else if (str_starts_with(classtag, "\"class\":\"ARPA\"")) {
+	status = json_arpa_read(buf, gpsdata, end);
+	if (PASS(status)) {
+	    gpsdata->set &= ~UNION_SET;
+	    gpsdata->set |= ARPA_SET;
+	}
+#endif /* ARPA_ENABLE */
     } else if (str_starts_with(classtag, "\"class\":\"ERROR\"")) {
 	status = json_error_read(buf, gpsdata, end);
 	if (PASS(status)) {

@@ -79,6 +79,10 @@ extern "C" {
 #define ZODIAC_ENABLE
 #endif
 
+#if !defined(ARPA_ENABLE) && defined(NMEA0183_ENABLE)
+#define ARPA_ENABLE
+#endif
+
 #if defined(EVERMORE_ENABLE) || \
      defined(GARMIN_ENABLE) || \
      defined(GEOSTAR_ENABLE) || \
@@ -330,10 +334,11 @@ struct aivdm_context_t {
     struct ais_type24_queue_t type24_queue;
 };
 
+
 #define MODE_NMEA	0
 #define MODE_BINARY	1
 
-typedef enum {ANY, GPS, RTCM2, RTCM3, AIS} gnss_type;
+typedef enum {ANY, GPS, RTCM2, RTCM3, AIS, ARPA} gnss_type;
 typedef enum {
     event_wakeup,
     event_triggermatch,

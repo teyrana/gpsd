@@ -338,6 +338,7 @@ void gpsd_init(struct gps_device_t *session, struct gps_context_t *context,
     gps_clear_fix(&session->lastfix);
     gps_clear_fix(&session->oldfix);
     session->gpsdata.set = 0;
+    arpa_clear_report(&session->gpsdata.arpa);
     gps_clear_att(&session->gpsdata.attitude);
     gps_clear_dop(&session->gpsdata.dop);
     session->mag_var = NAN;
@@ -432,6 +433,7 @@ void gpsd_clear(struct gps_device_t *session)
     lexer_init(&session->lexer);
     session->lexer.errout = session->context->errout;
     // session->gpsdata.online = 0;
+    arpa_clear_report(&session->gpsdata.arpa);
     gps_clear_att(&session->gpsdata.attitude);
     gps_clear_dop(&session->gpsdata.dop);
     gps_clear_fix(&session->gpsdata.fix);

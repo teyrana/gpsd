@@ -273,6 +273,126 @@ static void register_fractional_time(const char *tag, const char *fld,
  *
  **************************************************************************/
 
+#ifdef ARPA_ENABLE
+static gps_mask_t processTTM( int count UNUSED,
+                              char *field[] UNUSED,
+			      struct gps_device_t *session UNUSED)
+{
+    /* TTM - Tracked Target Message
+     * ============================
+     * see also: http://www.catb.org/gpsd/NMEA.html#_ttm_tracked_target_message
+     * 
+     *                                                11        15
+     *         1    2     3 4   5     6 7   8   9 10   | 12     |  16
+     *         |    |     | |   |     | |   |   | |    | |      |  |
+     * $--TTM,xx, x.x,  x.x,a,x.x,  x.x,a,x.x,x.x,a,c--c,a, ,  ,a*hh<CR><LF>
+     * $GPTTM, 1,2.48,235.1,T,1.8,268.9,N,    ,Q, ,  ,A*2E
+     *
+     * Field Number:                                     Example Value
+     *    1 - Target Number (0-99) . . . . . . . . . . .  1
+     *    2 - Target Distance  . . . . . . . . . . . . . 2.48
+     *    3 - Bearing from own ship  . . . . . . . . . . 235.1
+     *    4 - Bearing Units  . . . . . . . . . . . . . . T
+     *          R - Relative
+     *          T - True
+     *    5 - Target Speed . . . . . . . . . . . . . . . 1.8
+     *    6 - Target Course  . . . . . . . . . . . . . . 268.9
+     *    7 - Course Units . . . . . . . . . . . . . . . T
+     *          K - Kilometers
+     *          N - Knots
+     *          S - Statute miles
+     *    8 - Distance of closest-point-of-approach
+     *    9 - Time until closest-point-of-approach
+     *   10 - "-" means increasing . . . . . . . . . . . N
+     *   11 - Target name
+     *   12 - Target Status  . . . . . . . . . . . . . . Q
+     *        Q - Acquiring
+     *        T - Tracking
+     *      [ A - Stale ]
+     *        L - Lost
+     *   13 - Reference Target (?)
+     *   14 - Time of observation (?)
+     *   15 - target acquisition  (?)
+     *        A - automatic
+     *        M - manual
+     *   16 - Checksum . . . . . . . . . . . . . . . . . 2E
+     */
+
+//    if( (field[1][0] == '\0') || (field[5][0] == '\0')){
+//        return 0;
+//    }
+
+    bool scaled = false;
+
+    /* ignore empty/missing field, fix mode of last resort */
+    if (count > 7){
+        // session->gpsdata.attitude.heading = safe_atof(field[1]);
+        session->gpsdata.arpa.number = (int)field[1][0];
+
+        session->gpsdata.arpa.range = safe_atof(field[2]);
+        session->gpsdata.arpa.bearing = safe_atof(field[3]);
+        switch(field[4][0]){
+            case 'R': case 'r':
+                session->gpsdata.arpa.relative = true;
+                break;
+            case 'T': case 't':
+                session->gpsdata.arpa.relative = false;
+                break;
+        }
+
+        session->gpsdata.arpa.speed = safe_atof(field[5]);
+        session->gpsdata.arpa.course = safe_atof(field[6]);
+        session->gpsdata.arpa.units = field[7][0];
+
+        if (true==scaled){
+            switch(session->gpsdata.arpa.units){
+                case 'K': case 'k':
+                    // km => m
+                    session->gpsdata.arpa.range *= 1000;
+                    // kilometers / hour  =>  meters per second
+                    session->gpsdata.arpa.speed *= 0.277778;
+                    break;
+                case 'N': case 'n':
+                    // nautical miles to meters
+                    session->gpsdata.arpa.range *= 1852;
+                    // knots => meters per second
+                    session->gpsdata.arpa.speed *= 0.514444;
+                    break;
+                case 'S': case 's':
+                    // statute miles to meters
+                    session->gpsdata.arpa.range *= 1609.34;
+                    // miles / hour => meters per second
+                    session->gpsdata.arpa.speed *= 0.44704;
+                    break;
+            }
+            // 'M' == meters
+            session->gpsdata.arpa.units = 'M';
+        }
+    }
+
+    fprintf(stderr,"<<<< finishing processTTM:\n");
+    fprintf(stderr,"    range: %8.4f @ bearing: %8.4f (rel?:  %d)\n",
+                   session->gpsdata.arpa.range,
+                   session->gpsdata.arpa.bearing,
+                   session->gpsdata.arpa.relative);
+    fprintf(stderr,"    speed: %8.4f @ course:  %8.4f (units: %c) (scaled?: %d)\n",
+                   session->gpsdata.arpa.speed,
+                   session->gpsdata.arpa.course,
+                   session->gpsdata.arpa.units,
+                   scaled);
+
+    gpsd_log(&session->context->errout, LOG_DATA,
+             "TTM: range(T)=%.2f, bearing(M)=%.2f, course=%.2f, speed=%.2f",
+             session->gpsdata.arpa.range,
+             session->gpsdata.arpa.bearing,
+             session->gpsdata.arpa.course,
+             session->gpsdata.arpa.speed);
+
+    return ARPA_SET;
+}
+#endif /* ARPA_ENABLE */
+
+
 /* process xxVTG
  *     $GPVTG,054.7,T,034.4,M,005.5,N,010.2,K
  *     $GPVTG,054.7,T,034.4,M,005.5,N,010.2,K,A
@@ -2502,6 +2622,10 @@ gps_mask_t nmea_parse(char *sentence, struct gps_device_t * session)
 	{"RMC", 8,  false, processRMC},
 	{"TXT", 5,  false, processTXT},
 	{"VLW", 0, false, NULL},	/* ignore Dual ground/water distance */
+#ifdef ARPA_ENABLE
+	{"TTM", 7,  false, processTTM},
+#endif /* ARPA_ENABLE */
+	{"ZDA", 4,  false, processZDA},
 	{"VTG", 5,  false, processVTG},
 	{"ZDA", 4,  false, processZDA},
     };

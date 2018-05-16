@@ -581,6 +581,8 @@ static void decode(FILE *fpin, FILE*fpout)
     {
 	gps_mask_t changed = gpsd_poll(&session);
 
+	fprintf(stderr, "____ polled gpsd: %lX\n", changed);
+
 	if (changed == ERROR_SET || changed == NODATA_IS)
 	    break;
 	if (session.lexer.type == COMMENT_PACKET)
@@ -590,21 +592,27 @@ static void decode(FILE *fpin, FILE*fpout)
 	if (session.lexer.outbuflen < minima[session.lexer.type+1])
 	    minima[session.lexer.type+1] = session.lexer.outbuflen;
 	/* mask should match what's in report_data() */
-	if ((changed & (REPORT_IS|GST_SET|SATELLITE_SET|SUBFRAME_SET|ATTITUDE_SET|RTCM2_SET|RTCM3_SET|AIS_SET|PASSTHROUGH_IS)) == 0)
+	if ((changed & (REPORT_IS|GST_SET|SATELLITE_SET|SUBFRAME_SET|ATTITUDE_SET|RTCM2_SET|RTCM3_SET|AIS_SET|ARPA_SET|PASSTHROUGH_IS)) == 0)
 	    continue;
 	if (!filter(changed, &session))
 	    continue;
 	else if (json) {
+
 	    if ((changed & PASSTHROUGH_IS) != 0) {
 		(void)fputs((char *)session.lexer.outbuffer, fpout);
 		(void)fputs("\n", fpout);
 	    }
+
 #ifdef SOCKET_EXPORT_ENABLE
 	    else {
 		if ((changed & AIS_SET)!=0) {
 		    if (session.gpsdata.ais.type == 24 && session.gpsdata.ais.type24.part != both && !split24)
 			continue;
 		}
+
+		// TODO: FIXME!
+		fprintf(stderr, "________ socket-export-enable.\n");
+
 		json_data_report(changed,
 				 &session, &policy,
 				 buf, sizeof(buf));

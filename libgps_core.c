@@ -111,6 +111,7 @@ int gps_open(const char *host,
     gpsdata->set = 0;
     gpsdata->status = STATUS_NO_FIX;
     gpsdata->satellites_used = 0;
+    arpa_clear_report(&(gpsdata->arpa));
     gps_clear_att(&(gpsdata->attitude));
     gps_clear_dop(&(gpsdata->dop));
     gps_clear_fix(&(gpsdata->fix));

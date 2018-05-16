@@ -275,6 +275,19 @@ void gps_clear_fix(struct gps_fix_t *fixp)
     fixp->ecef.vAcc = NAN;
 }
 
+void arpa_clear_report(struct arpa_t *arpap)
+{
+    memset(arpap, 0, sizeof(struct arpa_t));
+    arpap->number = 0;
+    arpap->range = NAN;
+    arpap->bearing = NAN;
+    arpap->relative = true;
+    arpap->speed = NAN;
+    arpap->course = NAN;
+    arpap->units = '-';
+
+}
+
 void gps_clear_att(struct attitude_t *attp)
 /* stuff an attitude structure with recognizable out-of-band values */
 {

@@ -1782,7 +1782,86 @@ the following elements:</para>
 <para>When the C client library parses a response of this kind, it
 will assert the ERR_SET bit in the top-level set member.</para>
 
+
+<variablelist>
+<varlistentry>
+<term>ARPA</term>
+<listitem>
+<para>A TPV object is a time-position-velocity report. The "class" and "mode"
+fields will reliably be present. The "mode" field will be emitted
+before optional fields that may be absent when there is no fix. Error
+estimates will be emitted after the fix components they're associated with.
+Others may be reported or not depending on the fix quality.</para>
+
+<table frame="all" pgwide="0"><title>TPV object</title>
+<tgroup cols="3" align="left" colsep="1" rowsep="1">
+<thead>
+<row>
+	<entry>Name</entry>
+	<entry>Always?</entry>
+	<entry>Type</entry>
+	<entry>Description</entry>
+</row>
+</thead>
+<tbody>
+<row>
+	<entry>class</entry>
+	<entry>Yes</entry>
+	<entry>string</entry>
+        <entry>Fixed: "ARPA"</entry>
+</row>
+<row>
+	<entry>number</entry>
+	<entry>Yes</entry>
+	<entry>integer</entry>
+        <entry>track number, as reported from the radar</entry>
+</row>
+<row>
+	<entry>range</entry>
+	<entry>Yes</entry>
+	<entry>real</entry>
+        <entry>range from the sensor to the target report</entry>
+</row>
+<row>
+	<entry>bearing</entry>
+	<entry>Yes</entry>
+	<entry>real</entry>
+        <entry>angle from the sensor to the target report</entry>
+</row>
+<row>
+	<entry>relative</entry>
+	<entry>Yes</entry>
+	<entry>boolean</entry>
+        <entry>if true, the bearing and course are relative to the sensor's heading.
+        Otherwise, relative to True North.</entry>
+</row>
+<row>
+	<entry>speed</entry>
+	<entry>Yes</entry>
+	<entry>real</entry>
+        <entry>apparent speed of the target</entry>
+</row>
+<row>
+	<entry>course</entry>
+	<entry>Yes</entry>
+	<entry>real</entry>
+        <entry>apparent course of the target</entry>
+</row>
+<row>
+	<entry>units</entry>
+	<entry>Yes</entry>
+	<entry>character</entry>
+        <entry>Indicates reported units: 'K'=kilometers, 'N'=knots, 'S'=statute miles, 'M'=meters.
+        If given the 'scaled' flag, units will be reported as meters.</entry>
+</row>
+</tbody>
+</tgroup>
+</table>
+
+
 </refsect1>
+
+
 
 <refsect1 id='rtcm2'><title>RTCM2</title>
 
