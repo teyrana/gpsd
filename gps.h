@@ -859,6 +859,20 @@ struct subframe_t {
 
 typedef uint64_t gps_mask_t;
 
+struct arpa_t
+{
+    double bearing; /* bearing from sensor to target */
+    bool relative; /* true  <= 'R': angles are relative to sensor's heading */
+                 /* false <= 'T': angles are relative to true north */
+    double range;  /* range in meters */
+    double track; /* course in degrees ('T': north, 'R':heading)*/
+
+    /* Possibile additions:
+        - CPA( time, dist )
+        - error_ellipse( a, b )
+    */
+};
+
 /*
  * Is an MMSI number that of an auxiliary associated with a mother ship?
  * We need to be able to test this for decoding AIS Type 24 messages.
@@ -2109,6 +2123,8 @@ struct gps_data_t {
 #define MAGNETIC_TRACK_SET (1llu<<38)
 #define RAW_SET         (1llu<<39)
 #define SET_HIGH_BIT	40
+#define ARPA_SET        (1llu<<41)
+
     timestamp_t online;		/* NZ if GPS is on line, 0 if not.
 				 *
 				 * Note: gpsd clears this time when sentences
@@ -2161,9 +2177,11 @@ struct gps_data_t {
     } devices;
 
     /* pack things never reported together to reduce structure size */
+
 #define UNION_SET	(AIS_SET|ATTITUDE_SET|ERROR_SET|GST_SET| \
 			 LOGMESSAGE_SET|OSCILLATOR_SET|PPS_SET|RAW_SET| \
-			 RTCM2_SET|RTCM3_SET|SUBFRAME_SET|TOFF_SET|VERSION_SET)
+			 RTCM2_SET|RTCM3_SET|SUBFRAME_SET|TOFF_SET|VERSION_SET| \
+                         ARPA_SET)
 
     union {
 	/* unusual forms of sensor data that might come up the pipe */
@@ -2171,6 +2189,7 @@ struct gps_data_t {
 	struct rtcm3_t	rtcm3;
 	struct subframe_t subframe;
 	struct ais_t ais;
+        struct arpa_t arpa;
 	struct attitude_t attitude;
         struct navdata_t navdata;
 	struct rawdata_t raw;

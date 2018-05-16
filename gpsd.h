@@ -333,7 +333,7 @@ struct aivdm_context_t {
 #define MODE_NMEA	0
 #define MODE_BINARY	1
 
-typedef enum {ANY, GPS, RTCM2, RTCM3, AIS} gnss_type;
+typedef enum {ANY, GPS, RTCM2, RTCM3, AIS, ARPA} gnss_type;
 typedef enum {
     event_wakeup,
     event_triggermatch,
@@ -760,6 +760,13 @@ struct gps_device_t {
 	    char ais_channel;
 	} aivdm;
 #endif /* AIVDM_ENABLE */
+// do we need this?
+// #ifdef ARPA_ENABLE
+// 	struct {
+// 	    struct arpa_context_t context[ARPA_CHANNELS];
+// 	    char arpa_channel;
+//         } arpa;
+// #endif /* AIVDM_ENABLE */
     } driver;
 
     /*
